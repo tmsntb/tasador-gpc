@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tasador — Grupo Pesado Castro</title>
+<style>
+@font-face { font-family: 'NouvelR'; src: url('/NouvelR-Light.otf') format('opentype'); font-weight: 300; font-display: swap; }
+@font-face { font-family: 'NouvelR'; src: url('/NouvelR-Regular.otf') format('opentype'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'NouvelR'; src: url('/NouvelR-Book.otf') format('opentype'); font-weight: 450; font-display: swap; }
+@font-face { font-family: 'NouvelR'; src: url('/NouvelR-Semibold.otf') format('opentype'); font-weight: 600; font-display: swap; }
+@font-face { font-family: 'NouvelR'; src: url('/NouvelR-Bold.otf') format('opentype'); font-weight: 700; font-display: swap; }
+@font-face { font-family: 'NouvelR'; src: url('/NouvelR-Extrabold.otf') format('opentype'); font-weight: 800; font-display: swap; }
+
+:root {
+  --bg: #f4f6f9;
+  --surface: #ffffff;
+  --surface2: #eef1f5;
+  --border: #dde2ea;
+  --border2: #c8d0db;
+  --text: #1a2030;
+  --text2: #3a4558;
+  --muted: #7a8799;
+  --blue-dark: #1a3a6e;
+  --blue-mid: #1a5fa8;
+  --blue-light: #2a9fd6;
+  --blue-pale: #e8f4fb;
+  --infoauto: #1a5fa8;
+  --ml-color: #7a5e00;
+  --ml-bg: #fffbe6;
+  --ml-border: #e8d060;
+  --rg-color: #a03008;
+  --rg-bg: #fff2ec;
+  --rg-border: #f0c0a0;
+  --font: 'NouvelR', system-ui, sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: var(--font); font-weight: 400; min-height: 100vh; font-size: 14px; -webkit-font-smoothing: antialiased; }
+
+/* HEADER */
+header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 36px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 64px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.logo-wrap { display: flex; align-items: center; gap: 14px; }
+.logo-img { height: 36px; width: auto; }
+.logo-divider { width: 1px; height: 28px; background: var(--border); }
+.logo-sub { font-size: 11px; font-weight: 700; color: var(--muted); letter-spacing: 0.12em; text-transform: uppercase; }
+.header-badge { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--blue-mid); background: var(--blue-pale); border: 1px solid #b8d9ef; border-radius: 4px; padding: 4px 10px; }
+
+/* HERO */
+.hero {
+  background: linear-gradient(135deg, #1a3a6e 0%, #1a5fa8 55%, #2a9fd6 100%);
+  padding: 36px 36px 32px;
+}
+.hero-title { font-size: 32px; font-weight: 800; color: #fff; line-height: 1.05; letter-spacing: -0.02em; margin-bottom: 6px; }
+.hero-title span { color: #7dd6f5; }
+.hero-desc { font-size: 13px; font-weight: 300; color: rgba(255,255,255,0.65); margin-bottom: 28px; }
+
+.search-grid { display: grid; grid-template-columns: 1.2fr 1.2fr 1fr 100px 100px auto; gap: 10px; align-items: flex-end; }
+.field { display: flex; flex-direction: column; gap: 5px; }
+.field label { font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.55); letter-spacing: 0.1em; text-transform: uppercase; }
+.field input {
+  background: rgba(255,255,255,0.14);
+  border: 1px solid rgba(255,255,255,0.22);
+  border-radius: 5px;
+  color: #fff;
+  font-family: var(--font);
+  font-size: 14px;
+  height: 42px;
+  padding: 0 14px;
+  outline: none;
+  transition: border-color 0.2s, background 0.2s;
+}
+.field input:focus { border-color: rgba(255,255,255,0.65); background: rgba(255,255,255,0.2); }
+.field input::placeholder { color: rgba(255,255,255,0.3); }
+.field input[type=number]::-webkit-inner-spin-button { opacity: 0.4; }
+
+.search-btn {
+  height: 42px;
+  background: #fff;
+  color: var(--blue-dark);
+  border: none;
+  border-radius: 5px;
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 0 24px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, transform 0.1s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+}
+.search-btn:hover { background: #7dd6f5; }
+.search-btn:active { transform: scale(0.98); }
+.search-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+/* FILTER BAR */
+.filter-bar {
+  padding: 12px 36px;
+  border-bottom: 1px solid var(--border);
+  display: none;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface);
+  flex-wrap: wrap;
+}
+.filter-label { font-size: 10px; font-weight: 700; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; margin-right: 4px; }
+.filter-btn {
+  padding: 5px 14px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--muted);
+  font-family: var(--font);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.filter-btn:hover { border-color: var(--blue-light); color: var(--blue-mid); background: var(--blue-pale); }
+.filter-btn.active.all   { background: var(--blue-dark); color: #fff; border-color: transparent; }
+.filter-btn.active.infoauto { background: var(--blue-mid); color: #fff; border-color: transparent; }
+.filter-btn.active.ml   { background: #9a7800; color: #fff; border-color: transparent; }
+.filter-btn.active.rg   { background: #c9440a; color: #fff; border-color: transparent; }
+.dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.dot-ia { background: var(--blue-mid); }
+.dot-ml { background: #c49900; }
+.dot-rg { background: #c9440a; }
+.count-badge { background: rgba(0,0,0,0.08); border-radius: 3px; padding: 1px 6px; font-size: 10px; }
+
+/* MAIN */
+.main { padding: 28px 36px; max-width: 1400px; }
+
+.empty-state { text-align: center; padding: 80px 20px; }
+.empty-icon { font-size: 40px; margin-bottom: 16px; opacity: 0.15; }
+.empty-title { font-size: 18px; font-weight: 700; color: var(--muted); margin-bottom: 8px; }
+.empty-desc { font-size: 13px; font-weight: 300; color: var(--border2); }
+
+.loading { display: none; text-align: center; padding: 80px 20px; }
+.loading.show { display: block; }
+.spinner { width: 32px; height: 32px; border: 2.5px solid var(--border); border-top-color: var(--blue-mid); border-radius: 50%; animation: spin 0.7s linear infinite; margin: 0 auto 20px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-text { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+.loading-sub { font-size: 12px; font-weight: 300; color: var(--muted); }
+
+.error-msg { background: #fff0ee; border: 1px solid #f5c0b0; border-radius: 6px; padding: 14px 18px; color: #b03010; font-size: 13px; margin-bottom: 20px; display: none; }
+.error-msg.show { display: block; }
+
+/* STATS */
+.stats-row { display: none; grid-template-columns: repeat(3,1fr); gap: 12px; margin-bottom: 28px; }
+.stats-row.show { display: grid; }
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 18px 20px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+}
+.stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+.stat-card.ia::before { background: linear-gradient(90deg, var(--blue-dark), var(--blue-light)); }
+.stat-card.ml::before { background: linear-gradient(90deg, #c49900, #f0c000); }
+.stat-card.rg::before { background: linear-gradient(90deg, #c9440a, #f07030); }
+.stat-source { font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 10px; display: flex; align-items: center; gap: 7px; }
+.stat-card.ia .stat-source { color: var(--blue-mid); }
+.stat-card.ml .stat-source { color: #9a7800; }
+.stat-card.rg .stat-source { color: #c9440a; }
+.stat-avg { font-size: 26px; font-weight: 800; line-height: 1; letter-spacing: -0.02em; margin-bottom: 5px; }
+.stat-card.ia .stat-avg { color: var(--blue-dark); }
+.stat-card.ml .stat-avg { color: #7a5e00; }
+.stat-card.rg .stat-avg { color: #a03008; }
+.stat-range { font-size: 11px; font-weight: 400; color: var(--muted); }
+.stat-count { font-size: 10px; font-weight: 600; color: var(--border2); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.06em; }
+
+/* SECTION */
+.section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; margin-top: 28px; }
+.section-header:first-of-type { margin-top: 0; }
+.section-pill {
+  display: flex; align-items: center; gap: 7px;
+  padding: 5px 12px 5px 9px;
+  border-radius: 4px;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+  white-space: nowrap;
+}
+.section-pill.ia { background: var(--blue-pale); color: var(--blue-mid); border: 1px solid #b8d9ef; }
+.section-pill.ml { background: var(--ml-bg); color: #9a7800; border: 1px solid var(--ml-border); }
+.section-pill.rg { background: var(--rg-bg); color: var(--rg-color); border: 1px solid var(--rg-border); }
+.section-line { flex: 1; height: 1px; background: var(--border); }
+.section-avg { font-size: 12px; font-weight: 400; color: var(--muted); white-space: nowrap; }
+
+/* INFOAUTO CARD */
+.infoauto-card {
+  background: var(--blue-pale);
+  border: 1px solid #b8d9ef;
+  border-radius: 8px;
+  padding: 20px 24px;
+  margin-bottom: 4px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 20px;
+}
+.ia-label { font-size: 10px; font-weight: 700; color: var(--blue-mid); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 6px; opacity: 0.7; }
+.ia-value { font-size: 22px; font-weight: 800; color: var(--blue-dark); letter-spacing: -0.02em; }
+.ia-sub { font-size: 12px; font-weight: 300; color: var(--muted); margin-top: 3px; }
+
+/* TABLE */
+.listing-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  margin-bottom: 4px;
+}
+.listing-table th {
+  text-align: left;
+  font-size: 10px; font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase; letter-spacing: 0.09em;
+  padding: 11px 14px;
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+}
+.listing-table td { padding: 11px 14px; border-bottom: 1px solid var(--border); font-size: 13px; vertical-align: middle; }
+.listing-table tbody tr:last-child td { border-bottom: none; }
+.listing-table tbody tr:hover td { background: #f7fafd; }
+.year-badge { background: var(--blue-pale); border: 1px solid #b8d9ef; border-radius: 3px; padding: 3px 8px; font-size: 12px; font-weight: 700; color: var(--blue-dark); white-space: nowrap; }
+.price-cell { font-size: 15px; font-weight: 800; white-space: nowrap; }
+.price-cell.ml { color: #7a5e00; }
+.price-cell.rg { color: #a03008; }
+.muted-cell { color: var(--muted); font-weight: 400; }
+.link-cell a { color: var(--blue-mid); text-decoration: none; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; transition: color 0.15s; }
+.link-cell a:hover { color: var(--blue-dark); text-decoration: underline; }
+.no-data { color: var(--muted); font-size: 13px; font-weight: 300; padding: 16px 0; font-style: italic; }
+
+/* FOOTER */
+footer { text-align: center; padding: 24px; font-size: 11px; color: var(--border2); border-top: 1px solid var(--border); margin-top: 40px; }
+
+/* RESPONSIVE */
+@media (max-width: 900px) {
+  header, .filter-bar, .main { padding-left: 20px; padding-right: 20px; }
+  .hero { padding: 24px 20px 22px; }
+  .search-grid { grid-template-columns: 1fr 1fr; }
+  .stats-row { grid-template-columns: 1fr; }
+}
+@media (max-width: 540px) {
+  .search-grid { grid-template-columns: 1fr; }
+  .hero-title { font-size: 26px; }
+  .listing-table th, .listing-table td { padding: 8px 8px; font-size: 12px; }
+  .infoauto-card { grid-template-columns: 1fr 1fr; }
+  .header-badge { display: none; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-wrap">
+    <img class="logo-img" src="/GPC_LOGOS_PNG-02.png" alt="Grupo Pesado Castro" />
+    <div class="logo-divider"></div>
+    <div class="logo-sub">Tasador</div>
+  </div>
+  <div class="header-badge">Precios en tiempo real</div>
+</header>
+
+<div class="hero">
+  <div class="hero-title">Tasador de <span>vehículos</span></div>
+  <div class="hero-desc">Consultá precios de referencia en Infoauto, MercadoLibre y Rosario Garage</div>
+  <div class="search-grid">
+    <div class="field"><label>Marca</label><input type="text" id="brand" placeholder="Toyota, Renault…" /></div>
+    <div class="field"><label>Modelo</label><input type="text" id="model" placeholder="Hilux, Kwid…" /></div>
+    <div class="field"><label>Versión (opcional)</label><input type="text" id="version" placeholder="SRX, Iconic…" /></div>
+    <div class="field"><label>Año desde</label><input type="number" id="yearFrom" placeholder="2022" min="1990" max="2030" /></div>
+    <div class="field"><label>Año hasta</label><input type="number" id="yearTo" placeholder="2024" min="1990" max="2030" /></div>
+    <div class="field"><label>&nbsp;</label><button class="search-btn" id="searchBtn" onclick="doSearch()">Buscar →</button></div>
+  </div>
+</div>
+
+<div class="filter-bar" id="filterBar">
+  <span class="filter-label">Filtrar:</span>
+  <button class="filter-btn active all" onclick="setFilter('all',this)">Todos <span class="count-badge" id="countAll">0</span></button>
+  <button class="filter-btn infoauto" onclick="setFilter('infoauto',this)"><span class="dot dot-ia"></span>Infoauto <span class="count-badge" id="countIA">0</span></button>
+  <button class="filter-btn ml" onclick="setFilter('ml',this)"><span class="dot dot-ml"></span>MercadoLibre <span class="count-badge" id="countML">0</span></button>
+  <button class="filter-btn rg" onclick="setFilter('rg',this)"><span class="dot dot-rg"></span>Rosario Garage <span class="count-badge" id="countRG">0</span></button>
+</div>
+
+<div class="main">
+  <div class="empty-state" id="emptyState">
+    <div class="empty-icon">◎</div>
+    <div class="empty-title">Ingresá un vehículo para empezar</div>
+    <div class="empty-desc">Buscamos en Infoauto, MercadoLibre y Rosario Garage en tiempo real</div>
+  </div>
+
+  <div class="loading" id="loadingState">
+    <div class="spinner"></div>
+    <div class="loading-text">Buscando precios actualizados…</div>
+    <div class="loading-sub" id="loadingStep">Consultando fuentes</div>
+  </div>
+
+  <div class="error-msg" id="errorMsg"></div>
+
+  <div class="stats-row" id="statsRow">
+    <div class="stat-card ia" id="statIA" style="display:none;">
+      <div class="stat-source"><span class="dot dot-ia"></span>Infoauto</div>
+      <div class="stat-avg" id="iaAvg">—</div>
+      <div class="stat-range" id="iaRange"></div>
+      <div class="stat-count" id="iaCount"></div>
+    </div>
+    <div class="stat-card ml" id="statML" style="display:none;">
+      <div class="stat-source"><span class="dot dot-ml"></span>MercadoLibre</div>
+      <div class="stat-avg" id="mlAvg">—</div>
+      <div class="stat-range" id="mlRange"></div>
+      <div class="stat-count" id="mlCount"></div>
+    </div>
+    <div class="stat-card rg" id="statRG" style="display:none;">
+      <div class="stat-source"><span class="dot dot-rg"></span>Rosario Garage</div>
+      <div class="stat-avg" id="rgAvg">—</div>
+      <div class="stat-range" id="rgRange"></div>
+      <div class="stat-count" id="rgCount"></div>
+    </div>
+  </div>
+
+  <div id="resultsContainer"></div>
+</div>
+
+<footer>Grupo Pesado Castro · Tasador de vehículos · Precios de referencia actualizados en tiempo real</footer>
+
+<script>
+let currentFilter = 'all', lastData = null;
+
+function fmt(n) {
+  if (!n && n !== 0) return '—';
+  return '$' + Number(n).toLocaleString('es-AR');
+}
+
+function setFilter(f, el) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  renderResults(lastData);
+}
+
+async function doSearch() {
+  const brand = document.getElementById('brand').value.trim();
+  const model = document.getElementById('model').value.trim();
+  if (!brand || !model) { alert('Completá al menos marca y modelo'); return; }
+
+  const btn = document.getElementById('searchBtn');
+  btn.disabled = true;
+  document.getElementById('emptyState').style.display = 'none';
+  document.getElementById('loadingState').classList.add('show');
+  document.getElementById('errorMsg').classList.remove('show');
+  document.getElementById('statsRow').classList.remove('show');
+  document.getElementById('filterBar').style.display = 'none';
+  document.getElementById('resultsContainer').innerHTML = '';
+
+  const steps = ['Consultando Infoauto…', 'Buscando en MercadoLibre…', 'Revisando Rosario Garage…', 'Procesando resultados…'];
+  let si = 0;
+  const stepEl = document.getElementById('loadingStep');
+  const iv = setInterval(() => { si = (si + 1) % steps.length; stepEl.textContent = steps[si]; }, 1800);
+
+  try {
+    const res = await fetch('/api/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        brand,
+        model,
+        version: document.getElementById('version').value.trim(),
+        yearFrom: document.getElementById('yearFrom').value.trim(),
+        yearTo: document.getElementById('yearTo').value.trim()
+      })
+    });
+
+    clearInterval(iv);
+    const data = await res.json();
+
+    if (!res.ok) throw new Error(data.error || 'Error del servidor');
+
+    lastData = data;
+    currentFilter = 'all';
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    document.querySelector('.filter-btn.all').classList.add('active');
+    renderResults(data);
+
+  } catch (err) {
+    clearInterval(iv);
+    document.getElementById('errorMsg').textContent = err.message || 'Error al obtener datos. Revisá tu conexión e intentá nuevamente.';
+    document.getElementById('errorMsg').classList.add('show');
+  } finally {
+    document.getElementById('loadingState').classList.remove('show');
+    btn.disabled = false;
+  }
+}
+
+function renderResults(data) {
+  if (!data) return;
+  const showIA = currentFilter === 'all' || currentFilter === 'infoauto';
+  const showML = currentFilter === 'all' || currentFilter === 'ml';
+  const showRG = currentFilter === 'all' || currentFilter === 'rg';
+  const ml = data.mercadolibre || [];
+  const rg = data.rosario_garage || [];
+
+  document.getElementById('filterBar').style.display = 'flex';
+  document.getElementById('countAll').textContent = ml.length + rg.length + (data.infoauto ? 1 : 0);
+  document.getElementById('countIA').textContent = data.infoauto ? 1 : 0;
+  document.getElementById('countML').textContent = ml.length;
+  document.getElementById('countRG').textContent = rg.length;
+  document.getElementById('statsRow').classList.add('show');
+
+  // Stats
+  if (data.infoauto && data.infoauto.precio_promedio) {
+    document.getElementById('statIA').style.display = 'block';
+    document.getElementById('iaAvg').textContent = fmt(data.infoauto.precio_promedio);
+    document.getElementById('iaRange').textContent = data.infoauto.precio_min && data.infoauto.precio_max
+      ? fmt(data.infoauto.precio_min) + ' – ' + fmt(data.infoauto.precio_max) : 'Referencia oficial';
+    document.getElementById('iaCount').textContent = 'Precio de referencia';
+  }
+  const mlP = ml.map(l => l.precio_ars).filter(p => p && p > 0);
+  if (mlP.length > 0) {
+    document.getElementById('statML').style.display = 'block';
+    const avg = Math.round(mlP.reduce((a, b) => a + b, 0) / mlP.length);
+    document.getElementById('mlAvg').textContent = fmt(avg);
+    document.getElementById('mlRange').textContent = fmt(Math.min(...mlP)) + ' – ' + fmt(Math.max(...mlP));
+    document.getElementById('mlCount').textContent = mlP.length + ' publicaciones con precio';
+  }
+  const rgP = rg.map(l => l.precio_ars).filter(p => p && p > 0);
+  if (rgP.length > 0) {
+    document.getElementById('statRG').style.display = 'block';
+    const avg = Math.round(rgP.reduce((a, b) => a + b, 0) / rgP.length);
+    document.getElementById('rgAvg').textContent = fmt(avg);
+    document.getElementById('rgRange').textContent = fmt(Math.min(...rgP)) + ' – ' + fmt(Math.max(...rgP));
+    document.getElementById('rgCount').textContent = rgP.length + ' publicaciones con precio';
+  }
+
+  // Results HTML
+  let html = '';
+
+  if (showIA && data.infoauto) {
+    const ia = data.infoauto;
+    html += `<div class="section-header">
+      <div class="section-pill ia"><span class="dot dot-ia"></span>Infoauto</div>
+      <div class="section-line"></div>
+      ${ia.precio_promedio ? `<span class="section-avg">Promedio: ${fmt(ia.precio_promedio)}</span>` : ''}
+    </div>
+    <div class="infoauto-card">
+      ${ia.precio_min ? `<div><div class="ia-label">Precio mínimo</div><div class="ia-value">${fmt(ia.precio_min)}</div></div>` : ''}
+      ${ia.precio_promedio ? `<div><div class="ia-label">Precio promedio</div><div class="ia-value">${fmt(ia.precio_promedio)}</div></div>` : ''}
+      ${ia.precio_max ? `<div><div class="ia-label">Precio máximo</div><div class="ia-value">${fmt(ia.precio_max)}</div></div>` : ''}
+      <div><div class="ia-label">Versión</div><div style="font-size:13px;color:var(--text2);font-weight:400;margin-top:6px;">${ia.version || '—'}</div>${ia.nota ? `<div class="ia-sub">${ia.nota}</div>` : ''}</div>
+    </div>`;
+  }
+
+  if (showML) {
+    const avg = mlP.length > 0 ? fmt(Math.round(mlP.reduce((a, b) => a + b, 0) / mlP.length)) : null;
+    html += `<div class="section-header">
+      <div class="section-pill ml"><span class="dot dot-ml"></span>MercadoLibre</div>
+      <div class="section-line"></div>
+      ${avg ? `<span class="section-avg">Promedio: ${avg}</span>` : ''}
+    </div>`;
+    if (ml.length === 0) {
+      html += '<div class="no-data">Sin publicaciones encontradas</div>';
+    } else {
+      html += `<table class="listing-table"><thead><tr>
+        <th>Año</th><th>Versión</th><th>Km</th><th>Precio ARS</th><th>USD</th><th>Publicado</th><th>Link</th>
+      </tr></thead><tbody>`;
+      ml.forEach(l => {
+        html += `<tr>
+          <td><span class="year-badge">${l.año || '—'}</span></td>
+          <td>${l.version || '—'}</td>
+          <td class="muted-cell">${l.km ? Number(l.km).toLocaleString('es-AR') + ' km' : '—'}</td>
+          <td><span class="price-cell ml">${l.precio_ars ? fmt(l.precio_ars) : '—'}</span></td>
+          <td class="muted-cell">${l.precio_usd ? 'USD ' + Number(l.precio_usd).toLocaleString('es-AR') : '—'}</td>
+          <td class="muted-cell">${l.fecha_publicacion || '—'}</td>
+          <td class="link-cell">${l.url ? `<a href="${l.url}" target="_blank">ver →</a>` : '—'}</td>
+        </tr>`;
+      });
+      html += '</tbody></table>';
+    }
+  }
+
+  if (showRG) {
+    const avg = rgP.length > 0 ? fmt(Math.round(rgP.reduce((a, b) => a + b, 0) / rgP.length)) : null;
+    html += `<div class="section-header">
+      <div class="section-pill rg"><span class="dot dot-rg"></span>Rosario Garage</div>
+      <div class="section-line"></div>
+      ${avg ? `<span class="section-avg">Promedio: ${avg}</span>` : ''}
+    </div>`;
+    if (rg.length === 0) {
+      html += '<div class="no-data">Sin publicaciones encontradas en Rosario Garage</div>';
+    } else {
+      html += `<table class="listing-table"><thead><tr>
+        <th>Año</th><th>Versión</th><th>Km</th><th>Precio ARS</th><th>USD</th><th>Publicado</th><th>Vendedor</th><th>Link</th>
+      </tr></thead><tbody>`;
+      rg.forEach(l => {
+        html += `<tr>
+          <td><span class="year-badge">${l.año || '—'}</span></td>
+          <td>${l.version || '—'}</td>
+          <td class="muted-cell">${l.km ? Number(l.km).toLocaleString('es-AR') + ' km' : '—'}</td>
+          <td><span class="price-cell rg">${l.precio_ars ? fmt(l.precio_ars) : '—'}</span></td>
+          <td class="muted-cell">${l.precio_usd ? 'USD ' + Number(l.precio_usd).toLocaleString('es-AR') : '—'}</td>
+          <td class="muted-cell">${l.fecha_publicacion || '—'}</td>
+          <td class="muted-cell">${l.vendedor || '—'}</td>
+          <td class="link-cell">${l.url ? `<a href="${l.url}" target="_blank">ver →</a>` : '—'}</td>
+        </tr>`;
+      });
+      html += '</tbody></table>';
+    }
+  }
+
+  document.getElementById('resultsContainer').innerHTML = html;
+}
+
+['brand','model','version','yearFrom','yearTo'].forEach(id => {
+  document.getElementById(id).addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(); });
+});
+</script>
+</body>
+</html>
