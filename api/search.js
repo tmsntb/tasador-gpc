@@ -14,7 +14,7 @@ export default async function handler(req, res) {
   else if (yearTo) yearDesc = ' hasta ' + yearTo;
   const vehiculo = brand + ' ' + model + (version ? ' ' + version : '') + yearDesc;
 
-  // Load Infoauto text from GitHub and extract relevant section
+  // Load Infoauto text from GitHub
   let infoautoContext = '';
   let infoautoLabel = null;
   try {
@@ -34,80 +34,71 @@ export default async function handler(req, res) {
           const txt = data.text.toUpperCase();
           const brandUpper = brand.toUpperCase();
           const modelUpper = model.toUpperCase();
-
-          // Find ALL occurrences of the brand and pick the one closest to the model
           let bestIdx = -1;
-          let bestModelDist = Infinity;
+          let bestDist = Infinity;
           let searchFrom = 0;
           while (true) {
             const idx = txt.indexOf(brandUpper, searchFrom);
             if (idx === -1) break;
-            // Look for model within 8000 chars after this brand mention
             const chunk = txt.substring(idx, idx + 8000);
             const modelIdx = chunk.indexOf(modelUpper);
-            if (modelIdx !== -1 && modelIdx < bestModelDist) {
-              bestModelDist = modelIdx;
+            if (modelIdx !== -1 && modelIdx < bestDist) {
+              bestDist = modelIdx;
               bestIdx = idx;
             }
             searchFrom = idx + 1;
           }
-
-          // Use best match or first brand occurrence
-          if (bestIdx === -1) {
-            bestIdx = txt.indexOf(brandUpper);
-          }
-
+          if (bestIdx === -1) bestIdx = txt.indexOf(brandUpper);
           const snippet = bestIdx >= 0
             ? data.text.substring(Math.max(0, bestIdx - 100), bestIdx + 10000)
             : data.text.substring(0, 8000);
-
-          infoautoContext = 'PRECIOS INFOAUTO PDF (' + infoautoLabel + '):\n' + snippet + '\n';
+          infoautoContext = 'PRECIOS INFOAUTO PDF (' + infoautoLabel + '):\n' + snippet;
         }
       }
     }
   } catch (e) {
-    console.log('Infoauto load error:', e.message);
+    console.log('Infoauto error:', e.message);
   }
 
-  const prompt = `Buscá precios de referencia para: ${vehiculo} en Argentina.
-${infoautoContext ? '\nSECCIÓN DEL PDF INFOAUTO (' + infoautoLabel + ') — buscá el modelo en este texto y extraé los precios exactos:\n' + infoautoContext : ''}
+  const prompt = `Buscá precios de referencia en Argentina para: ${vehiculo}
 
-INSTRUCCIONES:
-1. Buscá en MercadoLibre Argentina publicaciones de ${vehiculo} - necesito 5-8 publicaciones reales con precio, año, km y URL completa
-2. Buscá en Rosario Garage (rosariogarage.com) publicaciones de ${vehiculo}
-${infoautoLabel
-  ? '3. Infoauto: extraé los precios del PDF de arriba. El PDF tiene datos de autos Y motos. Ignorá la sección de motos y buscá específicamente "' + brand.toUpperCase() + '" y "' + model.toUpperCase() + '" en la sección de autos.'
-  : '3. Buscá precio Infoauto en infoauto.com.ar'}
+${infoautoContext ? 'DATOS INFOAUTO DEL PDF (' + infoautoLabel + ') — extraé los precios exactos de este texto, ignorá sección de motos:\n' + infoautoContext + '\n' : ''}
 
-Respondé ÚNICAMENTE con este JSON exacto sin texto ni backticks ni explicaciones:
-{"vehiculo":"${vehiculo}","infoauto":{"precio_min":número o null,"precio_max":número o null,"precio_promedio":número o null,"version":"versión exacta del PDF o null","nota":"${infoautoLabel ? 'PDF ' + infoautoLabel : 'web'}"},"mercadolibre":[{"año":número,"version":"texto","km":número o null,"precio_ars":número o null,"precio_usd":número o null,"fecha_publicacion":"texto","ubicacion":"ciudad","url":"https://..."}],"rosario_garage":[{"año":número,"version":"texto","km":número o null,"precio_ars":número o null,"precio_usd":número o null,"fecha_publicacion":"texto","vendedor":"texto","url":"https://..."}]}
+TAREA: Buscá en Google las siguientes fuentes y devolvé resultados reales:
+1. Publicaciones de ${vehiculo} en MercadoLibre Argentina (autos.mercadolibre.com.ar) — necesito 5 a 8 publicaciones con precio, km, año y URL
+2. Publicaciones de ${vehiculo} en Rosario Garage (rosariogarage.com) — todas las que encuentres
+${infoautoLabel ? '3. Infoauto: usá los datos del PDF de arriba' : '3. Precio de referencia Infoauto de infoauto.com.ar'}
 
-IMPORTANTE: precios en ARS como números enteros puros sin puntos ni comas (ej: 45000000). Si el precio está en USD multiplicá por el tipo de cambio blue actual para ARS. URLs completas con https://.`;
+Respondé SOLO con JSON válido, sin texto ni backticks:
+{"vehiculo":"${vehiculo}","infoauto":{"precio_min":número o null,"precio_max":número o null,"precio_promedio":número o null,"version":"texto o null","nota":"${infoautoLabel ? 'PDF ' + infoautoLabel : 'web'}"},"mercadolibre":[{"año":número,"version":"texto","km":número o null,"precio_ars":número o null,"precio_usd":número o null,"fecha_publicacion":"texto","ubicacion":"ciudad","url":"https://..."}],"rosario_garage":[{"año":número,"version":"texto","km":número o null,"precio_ars":número o null,"precio_usd":número o null,"fecha_publicacion":"texto","vendedor":"texto","url":"https://..."}]}
+
+Precios ARS como enteros sin separadores. Si precio en USD, calculá ARS al tipo blue actual.`;
 
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': process.env.ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
-        'anthropic-beta': 'web-search-2025-03-05'
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 4000,
-        tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 4 }],
-        messages: [{ role: 'user', content: prompt }]
-      })
-    });
+    const geminiRes = await fetch(
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + process.env.GEMINI_API_KEY,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          tools: [{ google_search: {} }],
+          generationConfig: { temperature: 0.1, maxOutputTokens: 2048 }
+        })
+      }
+    );
 
-    const data = await response.json();
-    if (!response.ok) {
-      console.error('Anthropic error:', JSON.stringify(data).substring(0, 400));
-      return res.status(500).json({ error: 'Error al consultar la API' });
+    const geminiData = await geminiRes.json();
+    if (!geminiRes.ok) {
+      console.error('Gemini error:', JSON.stringify(geminiData).substring(0, 300));
+      return res.status(500).json({ error: 'Error al consultar Gemini' });
     }
 
-    const text = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
+    const text = geminiData.candidates?.[0]?.content?.parts
+      ?.filter(p => p.text)
+      ?.map(p => p.text)
+      ?.join('') || '';
+
     let parsed = null;
     try {
       const clean = text.replace(/```json|```/g, '').trim();
@@ -122,4 +113,4 @@ IMPORTANTE: precios en ARS como números enteros puros sin puntos ni comas (ej: 
     console.error('Handler error:', err.message);
     return res.status(500).json({ error: 'Error interno del servidor' });
   }
-            }
+      }
