@@ -1,4 +1,10 @@
 {
   "version": 2,
-  "outputDirectory": "public"
+  "outputDirectory": "public",
+  "functions": {
+    "api/admin-login.js":   { "maxDuration": 10 },
+    "api/admin-upload.js":  { "maxDuration": 60 },
+    "api/search.js":        { "maxDuration": 60 },
+    "api/infoauto-data.js": { "maxDuration": 10 }
+  }
 }

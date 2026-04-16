@@ -269,6 +269,10 @@ footer { text-align: center; padding: 24px; font-size: 11px; color: var(--border
   .infoauto-card { grid-template-columns: 1fr 1fr; }
   .header-badge { display: none; }
 }
+
+.ia-month-badge { display:none; font-size:11px; font-weight:600; color: var(--blue-mid); background: var(--blue-pale); border: 1px solid #b8d9ef; border-radius:3px; padding:3px 9px; margin-left:auto; }
+.ia-month-badge.show { display:inline-block; }
+
 </style>
 </head>
 <body>
@@ -279,7 +283,7 @@ footer { text-align: center; padding: 24px; font-size: 11px; color: var(--border
     <div class="logo-divider"></div>
     <div class="logo-sub">Tasador</div>
   </div>
-  <div class="header-badge">Precios en tiempo real</div>
+  <span class="ia-month-badge" id="iaBadge"></span><div class="header-badge">Precios en tiempo real</div>
 </header>
 
 <div class="hero">
@@ -363,7 +367,6 @@ async function doSearch() {
   const brand = document.getElementById('brand').value.trim();
   const model = document.getElementById('model').value.trim();
   if (!brand || !model) { alert('Completá al menos marca y modelo'); return; }
-
   const btn = document.getElementById('searchBtn');
   btn.disabled = true;
   document.getElementById('emptyState').style.display = 'none';
@@ -372,39 +375,31 @@ async function doSearch() {
   document.getElementById('statsRow').classList.remove('show');
   document.getElementById('filterBar').style.display = 'none';
   document.getElementById('resultsContainer').innerHTML = '';
-
   const steps = ['Consultando Infoauto…', 'Buscando en MercadoLibre…', 'Revisando Rosario Garage…', 'Procesando resultados…'];
   let si = 0;
   const stepEl = document.getElementById('loadingStep');
   const iv = setInterval(() => { si = (si + 1) % steps.length; stepEl.textContent = steps[si]; }, 1800);
-
   try {
     const res = await fetch('/api/search', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        brand,
-        model,
+        brand, model,
         version: document.getElementById('version').value.trim(),
         yearFrom: document.getElementById('yearFrom').value.trim(),
         yearTo: document.getElementById('yearTo').value.trim()
       })
     });
-
     clearInterval(iv);
     const data = await res.json();
-
     if (!res.ok) throw new Error(data.error || 'Error del servidor');
-
-    lastData = data;
-    currentFilter = 'all';
+    lastData = data; currentFilter = 'all';
     document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
     document.querySelector('.filter-btn.all').classList.add('active');
     renderResults(data);
-
   } catch (err) {
     clearInterval(iv);
-    document.getElementById('errorMsg').textContent = err.message || 'Error al obtener datos. Revisá tu conexión e intentá nuevamente.';
+    document.getElementById('errorMsg').textContent = err.message || 'Error al obtener datos.';
     document.getElementById('errorMsg').classList.add('show');
   } finally {
     document.getElementById('loadingState').classList.remove('show');
@@ -491,7 +486,7 @@ function renderResults(data) {
           <td><span class="price-cell ml">${l.precio_ars ? fmt(l.precio_ars) : '—'}</span></td>
           <td class="muted-cell">${l.precio_usd ? 'USD ' + Number(l.precio_usd).toLocaleString('es-AR') : '—'}</td>
           <td class="muted-cell">${l.fecha_publicacion || '—'}</td>
-          <td class="link-cell">${l.url ? `<a href="${l.url}" target="_blank" rel="noopener noreferrer" onclick="window.open(this.href,'_blank');return false;">ver →</a>` : '—'}</td>
+          <td class="link-cell">${l.url ? `<a href="${l.url}" target="_blank" rel="noopener noreferrer">ver →</a>` : '—'}</td>
         </tr>`;
       });
       html += '</tbody></table>';
@@ -520,7 +515,7 @@ function renderResults(data) {
           <td class="muted-cell">${l.precio_usd ? 'USD ' + Number(l.precio_usd).toLocaleString('es-AR') : '—'}</td>
           <td class="muted-cell">${l.fecha_publicacion || '—'}</td>
           <td class="muted-cell">${l.vendedor || '—'}</td>
-          <td class="link-cell">${l.url ? `<a href="${l.url}" target="_blank" rel="noopener noreferrer" onclick="window.open(this.href,'_blank');return false;">ver →</a>` : '—'}</td>
+          <td class="link-cell">${l.url ? `<a href="${l.url}" target="_blank" rel="noopener noreferrer">ver →</a>` : '—'}</td>
         </tr>`;
       });
       html += '</tbody></table>';
@@ -533,6 +528,21 @@ function renderResults(data) {
 ['brand','model','version','yearFrom','yearTo'].forEach(id => {
   document.getElementById(id).addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(); });
 });
+
+// Load Infoauto badge on page load
+async function loadInfoautoBadge() {
+  try {
+    const res = await fetch('/api/infoauto-data');
+    const data = await res.json();
+    const badge = document.getElementById('iaBadge');
+    if (data.available && badge) {
+      badge.textContent = 'Infoauto ' + data.label;
+      badge.classList.add('show');
+    }
+  } catch {}
+}
+loadInfoautoBadge();
+
 </script>
 </body>
 </html>

@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — Tasador GPC</title>
+<style>
+@font-face { font-family: 'NouvelR'; src: url('/NouvelR-Regular.otf') format('opentype'); font-weight: 400; }
+@font-face { font-family: 'NouvelR'; src: url('/NouvelR-Bold.otf') format('opentype'); font-weight: 700; }
+@font-face { font-family: 'NouvelR'; src: url('/NouvelR-Extrabold.otf') format('opentype'); font-weight: 800; }
+
+:root {
+  --bg: #f4f6f9;
+  --surface: #ffffff;
+  --surface2: #eef1f5;
+  --border: #dde2ea;
+  --text: #1a2030;
+  --muted: #7a8799;
+  --blue-dark: #1a3a6e;
+  --blue-mid: #1a5fa8;
+  --blue-light: #2a9fd6;
+  --blue-pale: #e8f4fb;
+  --green: #1a7a4a;
+  --green-bg: #e8f5ee;
+  --green-border: #a8d8bc;
+  --red: #b03010;
+  --red-bg: #fff0ee;
+  --red-border: #f5c0b0;
+  --font: 'NouvelR', system-ui, sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: var(--font); min-height: 100vh; display: flex; flex-direction: column; -webkit-font-smoothing: antialiased; }
+
+header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 32px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+.logo-wrap { display: flex; align-items: center; gap: 12px; }
+.logo-img { height: 32px; }
+.logo-divider { width: 1px; height: 24px; background: var(--border); }
+.logo-sub { font-size: 11px; font-weight: 700; color: var(--muted); letter-spacing: 0.12em; text-transform: uppercase; }
+.admin-badge { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; background: var(--blue-dark); color: #fff; border-radius: 3px; padding: 4px 10px; }
+
+.main { flex: 1; display: flex; align-items: center; justify-content: center; padding: 40px 20px; }
+
+/* LOGIN SCREEN */
+.login-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 36px 40px;
+  width: 100%;
+  max-width: 380px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+}
+.login-title { font-size: 22px; font-weight: 800; color: var(--blue-dark); margin-bottom: 6px; }
+.login-sub { font-size: 13px; font-weight: 300; color: var(--muted); margin-bottom: 28px; }
+.field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 16px; }
+.field label { font-size: 10px; font-weight: 700; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; }
+.field input {
+  height: 42px; padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  font-family: var(--font); font-size: 14px; color: var(--text);
+  background: var(--surface2);
+  outline: none; transition: border-color 0.2s;
+}
+.field input:focus { border-color: var(--blue-light); background: #fff; }
+.btn-primary {
+  width: 100%; height: 42px;
+  background: var(--blue-mid); color: #fff;
+  border: none; border-radius: 5px;
+  font-family: var(--font); font-size: 13px; font-weight: 700;
+  letter-spacing: 0.05em; text-transform: uppercase;
+  cursor: pointer; transition: background 0.15s;
+  margin-top: 4px;
+}
+.btn-primary:hover { background: var(--blue-dark); }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ADMIN PANEL */
+.admin-panel { width: 100%; max-width: 560px; }
+.panel-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 32px 36px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  margin-bottom: 16px;
+}
+.panel-title { font-size: 18px; font-weight: 800; color: var(--blue-dark); margin-bottom: 4px; }
+.panel-sub { font-size: 13px; font-weight: 300; color: var(--muted); margin-bottom: 24px; }
+
+.current-pdf {
+  display: none;
+  background: var(--green-bg);
+  border: 1px solid var(--green-border);
+  border-radius: 6px;
+  padding: 12px 16px;
+  margin-bottom: 20px;
+  font-size: 13px;
+  color: var(--green);
+}
+.current-pdf.show { display: block; }
+.current-pdf strong { font-weight: 700; }
+
+.drop-zone {
+  border: 2px dashed var(--border);
+  border-radius: 8px;
+  padding: 40px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: var(--surface2);
+  margin-bottom: 16px;
+}
+.drop-zone:hover, .drop-zone.drag-over { border-color: var(--blue-light); background: var(--blue-pale); }
+.drop-zone.has-file { border-color: var(--blue-mid); border-style: solid; background: var(--blue-pale); }
+.drop-icon { font-size: 36px; margin-bottom: 10px; }
+.drop-title { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+.drop-sub { font-size: 12px; font-weight: 300; color: var(--muted); }
+.drop-filename { font-size: 13px; font-weight: 600; color: var(--blue-mid); margin-top: 8px; }
+.file-input { display: none; }
+
+.upload-info {
+  font-size: 12px; color: var(--muted);
+  background: var(--surface2);
+  border-radius: 5px;
+  padding: 10px 14px;
+  margin-bottom: 16px;
+  line-height: 1.5;
+}
+
+.progress-bar {
+  display: none;
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+.progress-bar.show { display: block; }
+.progress-fill {
+  height: 100%;
+  background: var(--blue-mid);
+  border-radius: 2px;
+  width: 0%;
+  transition: width 0.3s;
+  animation: progress-anim 2s ease-in-out infinite;
+}
+@keyframes progress-anim { 0%,100% { width: 30%; margin-left: 0; } 50% { width: 60%; margin-left: 20%; } }
+
+.msg { display: none; border-radius: 6px; padding: 12px 16px; font-size: 13px; margin-bottom: 12px; }
+.msg.show { display: block; }
+.msg.success { background: var(--green-bg); border: 1px solid var(--green-border); color: var(--green); }
+.msg.error { background: var(--red-bg); border: 1px solid var(--red-border); color: var(--red); }
+
+.btn-logout {
+  font-size: 12px; color: var(--muted); background: none;
+  border: 1px solid var(--border); border-radius: 4px;
+  padding: 5px 12px; cursor: pointer; font-family: var(--font);
+  transition: all 0.15s;
+}
+.btn-logout:hover { color: var(--text); border-color: var(--border); background: var(--surface2); }
+
+.back-link { text-align: center; margin-top: 8px; }
+.back-link a { font-size: 12px; color: var(--blue-mid); text-decoration: none; }
+.back-link a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-wrap">
+    <img class="logo-img" src="/GPC_LOGOS_PNG-02.png" alt="GPC" />
+    <div class="logo-divider"></div>
+    <div class="logo-sub">Tasador</div>
+  </div>
+  <span class="admin-badge">Panel Admin</span>
+</header>
+
+<div class="main">
+
+  <!-- LOGIN -->
+  <div class="login-card" id="loginCard">
+    <div class="login-title">Acceso Admin</div>
+    <div class="login-sub">Ingresá la contraseña de administrador</div>
+    <div class="field">
+      <label>Contraseña</label>
+      <input type="password" id="passwordInput" placeholder="••••••••••" />
+    </div>
+    <div class="msg error" id="loginError">Contraseña incorrecta</div>
+    <button class="btn-primary" id="loginBtn" onclick="doLogin()">Ingresar</button>
+  </div>
+
+  <!-- ADMIN PANEL -->
+  <div class="admin-panel" id="adminPanel" style="display:none;">
+    <div class="panel-card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;">
+        <div class="panel-title">Actualizar Infoauto</div>
+        <button class="btn-logout" onclick="doLogout()">Salir</button>
+      </div>
+      <div class="panel-sub">Subí el PDF de la revista Infoauto del mes. Todos los usuarios van a usar estos precios automáticamente.</div>
+
+      <div class="current-pdf" id="currentPdf"></div>
+
+      <div class="drop-zone" id="dropZone"
+        onclick="document.getElementById('fileInput').click()"
+        ondragover="event.preventDefault();this.classList.add('drag-over')"
+        ondragleave="this.classList.remove('drag-over')"
+        ondrop="handleDrop(event)">
+        <div class="drop-icon" id="dropIcon">📄</div>
+        <div class="drop-title" id="dropTitle">Arrastrá el PDF acá o hacé click para seleccionar</div>
+        <div class="drop-sub" id="dropSub">Aceptamos archivos .pdf — revista Infoauto escaneada</div>
+        <div class="drop-filename" id="dropFilename" style="display:none;"></div>
+      </div>
+      <input type="file" id="fileInput" class="file-input" accept=".pdf" onchange="handleFile(this.files[0])" />
+
+      <div class="upload-info">
+        El PDF se procesa en el servidor: se extrae el texto con reconocimiento de caracteres y se guarda en la base de datos. Las próximas búsquedas en el tasador van a usar automáticamente estos precios.
+      </div>
+
+      <div class="progress-bar" id="progressBar"><div class="progress-fill"></div></div>
+      <div class="msg" id="uploadMsg"></div>
+
+      <button class="btn-primary" id="uploadBtn" onclick="doUpload()" disabled>
+        Subir PDF al sistema
+      </button>
+    </div>
+
+    <div class="back-link">
+      <a href="/">← Volver al Tasador</a>
+    </div>
+  </div>
+
+</div>
+
+<script>
+let sessionToken = null;
+let selectedFile = null;
+
+// Check existing token in sessionStorage
+window.addEventListener('DOMContentLoaded', () => {
+  const t = sessionStorage.getItem('gpc_admin_token');
+  if (t) { sessionToken = t; showPanel(); }
+  document.getElementById('passwordInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') doLogin();
+  });
+});
+
+async function doLogin() {
+  const pwd = document.getElementById('passwordInput').value;
+  if (!pwd) return;
+  const btn = document.getElementById('loginBtn');
+  btn.disabled = true; btn.textContent = 'Verificando…';
+  document.getElementById('loginError').classList.remove('show');
+  try {
+    const res = await fetch('/api/admin-login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: pwd })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    sessionToken = data.token;
+    sessionStorage.setItem('gpc_admin_token', sessionToken);
+    showPanel();
+  } catch(e) {
+    document.getElementById('loginError').classList.add('show');
+    btn.disabled = false; btn.textContent = 'Ingresar';
+  }
+}
+
+function doLogout() {
+  sessionToken = null;
+  sessionStorage.removeItem('gpc_admin_token');
+  document.getElementById('adminPanel').style.display = 'none';
+  document.getElementById('loginCard').style.display = 'block';
+  document.getElementById('passwordInput').value = '';
+}
+
+async function showPanel() {
+  document.getElementById('loginCard').style.display = 'none';
+  document.getElementById('adminPanel').style.display = 'block';
+  // Load current PDF info
+  try {
+    const res = await fetch('/api/infoauto-data');
+    const data = await res.json();
+    const el = document.getElementById('currentPdf');
+    if (data.available) {
+      el.innerHTML = `✓ PDF cargado: <strong>Infoauto ${data.label}</strong> — subido el ${new Date(data.uploadedAt).toLocaleDateString('es-AR')} (${(data.chars/1000).toFixed(0)}k caracteres)`;
+      el.classList.add('show');
+    }
+  } catch {}
+}
+
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('dropZone').classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file && file.name.endsWith('.pdf')) handleFile(file);
+}
+
+function handleFile(file) {
+  if (!file) return;
+  selectedFile = file;
+  document.getElementById('dropIcon').textContent = '✅';
+  document.getElementById('dropTitle').textContent = 'PDF seleccionado';
+  document.getElementById('dropSub').style.display = 'none';
+  const fn = document.getElementById('dropFilename');
+  fn.textContent = file.name + ' (' + (file.size / 1024 / 1024).toFixed(1) + ' MB)';
+  fn.style.display = 'block';
+  document.getElementById('dropZone').classList.add('has-file');
+  document.getElementById('uploadBtn').disabled = false;
+  document.getElementById('uploadMsg').classList.remove('show');
+}
+
+async function doUpload() {
+  if (!selectedFile || !sessionToken) return;
+  const btn = document.getElementById('uploadBtn');
+  const progress = document.getElementById('progressBar');
+  const msg = document.getElementById('uploadMsg');
+  btn.disabled = true; btn.textContent = 'Procesando PDF…';
+  progress.classList.add('show');
+  msg.classList.remove('show');
+
+  try {
+    const fd = new FormData();
+    fd.append('pdf', selectedFile);
+    const res = await fetch('/api/admin-upload', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + sessionToken },
+      body: fd
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+
+    progress.classList.remove('show');
+    msg.className = 'msg success show';
+    msg.textContent = `✓ PDF cargado correctamente — Infoauto ${data.label} (${(data.chars/1000).toFixed(0)}k caracteres extraídos). Los usuarios ya pueden usarlo.`;
+    btn.textContent = '✓ PDF actualizado';
+
+    // Refresh current info
+    const el = document.getElementById('currentPdf');
+    el.innerHTML = `✓ PDF cargado: <strong>Infoauto ${data.label}</strong> — recién subido`;
+    el.classList.add('show');
+
+  } catch(e) {
+    progress.classList.remove('show');
+    msg.className = 'msg error show';
+    msg.textContent = 'Error: ' + (e.message || 'No se pudo subir el PDF. Intentá de nuevo.');
+    btn.disabled = false; btn.textContent = 'Subir PDF al sistema';
+  }
+}
+</script>
+</body>
+</html>
