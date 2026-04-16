@@ -36,7 +36,7 @@ export default async function handler(req, res) {
           const snippet = brandIdx >= 0
             ? txt.substring(Math.max(0, brandIdx - 200), brandIdx + 5000)
             : txt.substring(0, 5000);
-          infoautoContext = 'PRECIOS INFOAUTO PDF (' + data.label + ') — usá estos datos exactos para la sección infoauto:\n' + snippet + '\n';
+          infoautoContext = 'PRECIOS INFOAUTO PDF (' + data.label + '):\n' + snippet + '\n';
         }
       }
     }
@@ -44,17 +44,18 @@ export default async function handler(req, res) {
     console.log('Infoauto load error:', e.message);
   }
 
-  const prompt = 'Buscá precios de referencia para: ' + vehiculo + ' en Argentina.\n' +
-    (infoautoContext ? '\n' + infoautoContext + '\n' : '') +
-    '\nFuentes:\n' +
-    (infoautoLabel
-      ? '1. Infoauto: usá los datos del PDF ' + infoautoLabel + ' que te pasé arriba. Son los precios oficiales.'
-      : '1. Infoauto (infoauto.com.ar): buscá precio de referencia online.') +
-    '\n2. MercadoLibre Argentina (autos.mercadolibre.com.ar)' +
-    '\n3. Rosario Garage (rosariogarage.com)' +
-    '\n\nRespondé ÚNICAMENTE con JSON válido sin texto ni backticks:\n' +
-    '{"vehiculo":"nombre completo","infoauto":{"precio_min":número o null,"precio_max":número o null,"precio_promedio":número o null,"version":"versión encontrada","nota":"' + (infoautoLabel ? 'PDF ' + infoautoLabel : 'web') + '"},"mercadolibre":[{"año":número,"version":"versión","km":número o null,"precio_ars":número o null,"precio_usd":número o null,"fecha_publicacion":"fecha","ubicacion":"ciudad","url":"url completa https://"}],"rosario_garage":[{"año":número,"version":"versión","km":número o null,"precio_ars":número o null,"precio_usd":número o null,"fecha_publicacion":"fecha","vendedor":"nombre","url":"url completa https://"}]}' +
-    '\n\nReglas: 5-8 listings MercadoLibre, todos los de Rosario Garage. Precios ARS números puros. Si precio en USD estimalo en ARS al blue actual. URLs con https://.';
+  const prompt = `Buscá precios de referencia para: ${vehiculo} en Argentina.
+${infoautoContext ? '\nDATOS INFOAUTO DEL PDF (usá estos para la seccion infoauto):\n' + infoautoContext : ''}
+
+INSTRUCCIONES:
+1. Buscá en MercadoLibre Argentina: site:autos.mercadolibre.com.ar ${vehiculo} - necesito al menos 5 publicaciones reales con precio, año, km y URL
+2. Buscá en Rosario Garage: site:rosariogarage.com ${vehiculo} - todas las publicaciones que encuentres
+${infoautoLabel ? '3. Infoauto: usa los datos del PDF arriba' : '3. Buscá precio Infoauto de referencia en infoauto.com.ar'}
+
+Respondé ÚNICAMENTE con este JSON exacto sin texto ni backticks:
+{"vehiculo":"${vehiculo}","infoauto":{"precio_min":número o null,"precio_max":número o null,"precio_promedio":número o null,"version":"versión","nota":"${infoautoLabel || 'web'}"},"mercadolibre":[{"año":número,"version":"texto","km":número o null,"precio_ars":número o null,"precio_usd":número o null,"fecha_publicacion":"texto","ubicacion":"ciudad","url":"https://..."}],"rosario_garage":[{"año":número,"version":"texto","km":número o null,"precio_ars":número o null,"precio_usd":número o null,"fecha_publicacion":"texto","vendedor":"texto","url":"https://..."}]}
+
+IMPORTANTE: precios en ARS como enteros puros (ej: 45000000). Si el precio está en USD multiplicá por 1260 para ARS. URLs completas con https://.`;
 
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -67,15 +68,15 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 2000,
-        tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 2 }],
+        max_tokens: 4000,
+        tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 4 }],
         messages: [{ role: 'user', content: prompt }]
       })
     });
 
     const data = await response.json();
     if (!response.ok) {
-      console.error('Anthropic error:', JSON.stringify(data).substring(0, 300));
+      console.error('Anthropic error:', JSON.stringify(data).substring(0, 400));
       return res.status(500).json({ error: 'Error al consultar la API' });
     }
 
@@ -85,7 +86,7 @@ export default async function handler(req, res) {
       const clean = text.replace(/```json|```/g, '').trim();
       const match = clean.match(/\{[\s\S]*\}/);
       if (match) parsed = JSON.parse(match[0]);
-    } catch (e) { console.error('Parse error:', e.message); }
+    } catch (e) { console.error('Parse error:', e.message, text.substring(0, 200)); }
 
     if (!parsed) return res.status(500).json({ error: 'No se pudo procesar la respuesta' });
     return res.status(200).json({ ...parsed, _infoautoLabel: infoautoLabel });
@@ -94,4 +95,4 @@ export default async function handler(req, res) {
     console.error('Handler error:', err.message);
     return res.status(500).json({ error: 'Error interno del servidor' });
   }
-        }
+}
