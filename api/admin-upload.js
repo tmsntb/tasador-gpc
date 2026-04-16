@@ -1,16 +1,11 @@
 import { jwtVerify } from 'jose';
-import { kv } from '@vercel/kv';
 
-export const config = { api: { bodyParser: { sizeLimit: '25mb' } } };
+export const config = { api: { bodyParser: { sizeLimit: '30mb' } } };
 
-function verifyToken(req) {
-  const auth = req.headers.authorization || '';
-  const token = auth.replace('Bearer ', '');
-  if (!token) throw new Error('No token');
-  const secret = new TextEncoder().encode(
-    process.env.JWT_SECRET || (process.env.ADMIN_PASSWORD + '_jwt')
-  );
-  return jwtVerify(token, secret);
+async function verifyToken(req) {
+  const token = (req.headers.authorization || '').replace('Bearer ', '');
+  const secret = new TextEncoder().encode(process.env.JWT_SECRET || 'gpc_default_secret');
+  await jwtVerify(token, secret);
 }
 
 function parseMultipart(req) {
@@ -20,27 +15,26 @@ function parseMultipart(req) {
     req.on('end', () => {
       const body = Buffer.concat(chunks);
       const ct = req.headers['content-type'] || '';
-      const bm = ct.match(/boundary=(.+)/);
+      const bm = ct.match(/boundary=([^\s;]+)/);
       if (!bm) return reject(new Error('No boundary'));
-      const boundary = '--' + bm[1].trim();
+      const boundary = '--' + bm[1];
       const parts = body.toString('binary').split(boundary);
       for (const part of parts) {
-        if (part.includes('filename=') && (part.includes('application/pdf') || part.includes('.pdf'))) {
-          const headerEnd = part.indexOf('\r\n\r\n');
-          if (headerEnd === -1) continue;
-          const fileContent = part.slice(headerEnd + 4, part.lastIndexOf('\r\n'));
-          resolve(Buffer.from(fileContent, 'binary'));
+        if (part.includes('filename=') || part.includes('application/pdf')) {
+          const idx = part.indexOf('\r\n\r\n');
+          if (idx === -1) continue;
+          const content = part.slice(idx + 4, part.lastIndexOf('\r\n'));
+          resolve(Buffer.from(content, 'binary'));
           return;
         }
       }
-      reject(new Error('No PDF in request'));
+      reject(new Error('No PDF found'));
     });
     req.on('error', reject);
   });
 }
 
-// Extract text from PDF using pdftotext (available in Vercel Linux runtime)
-async function extractPDFText(pdfBuffer) {
+async function extractTextFromPDF(pdfBuffer) {
   const { writeFileSync, readFileSync, unlinkSync, existsSync } = await import('fs');
   const { exec } = await import('child_process');
   const { promisify } = await import('util');
@@ -50,20 +44,62 @@ async function extractPDFText(pdfBuffer) {
 
   const tmpIn = join(tmpdir(), `ia_${Date.now()}.pdf`);
   const tmpOut = tmpIn.replace('.pdf', '.txt');
-
   try {
     writeFileSync(tmpIn, pdfBuffer);
-    try {
-      await execAsync(`pdftotext -layout "${tmpIn}" "${tmpOut}"`);
-      return readFileSync(tmpOut, 'utf8');
-    } catch {
-      // Fallback: return base64 and note OCR needed
-      return null;
-    }
+    await execAsync(`pdftotext -layout "${tmpIn}" "${tmpOut}"`);
+    return readFileSync(tmpOut, 'utf8');
   } finally {
     if (existsSync(tmpIn)) unlinkSync(tmpIn);
     if (existsSync(tmpOut)) unlinkSync(tmpOut);
   }
+}
+
+async function saveToGitHub(text, label) {
+  const owner = process.env.GITHUB_OWNER;
+  const repo = process.env.GITHUB_REPO;
+  const token = process.env.GITHUB_TOKEN;
+  if (!owner || !repo || !token) throw new Error('GitHub env vars not set');
+
+  const path = 'data/infoauto.json';
+  const content = JSON.stringify({
+    text: text.substring(0, 60000),
+    label,
+    updatedAt: new Date().toISOString(),
+    chars: text.length
+  }, null, 2);
+
+  // Get current file SHA (needed to update)
+  let sha = null;
+  const getRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, {
+    headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github.v3+json' }
+  });
+  if (getRes.ok) {
+    const existing = await getRes.json();
+    sha = existing.sha;
+  }
+
+  // Commit the file
+  const body = {
+    message: `Infoauto ${label} — actualización automática`,
+    content: Buffer.from(content).toString('base64'),
+    ...(sha ? { sha } : {})
+  };
+
+  const putRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, {
+    method: 'PUT',
+    headers: {
+      Authorization: `token ${token}`,
+      Accept: 'application/vnd.github.v3+json',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(body)
+  });
+
+  if (!putRes.ok) {
+    const err = await putRes.text();
+    throw new Error(`GitHub error: ${err}`);
+  }
+  return await putRes.json();
 }
 
 export default async function handler(req, res) {
@@ -71,41 +107,25 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'POST') return res.status(405).end();
 
-  // Verify admin token
-  try {
-    await verifyToken(req);
-  } catch {
-    return res.status(401).json({ error: 'No autorizado' });
-  }
+  try { await verifyToken(req); }
+  catch { return res.status(401).json({ error: 'No autorizado' }); }
 
   try {
     const pdfBuffer = await parseMultipart(req);
-    const text = await extractPDFText(pdfBuffer);
+    const text = await extractTextFromPDF(pdfBuffer);
+    if (!text || text.trim().length < 100)
+      return res.status(422).json({ error: 'No se pudo extraer texto del PDF' });
 
-    if (!text) return res.status(422).json({ error: 'No se pudo extraer texto del PDF' });
-
-    // Save to Vercel KV with month/year label
     const now = new Date();
     const label = `${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`;
-    
-    await kv.set('infoauto:current', {
-      text: text.substring(0, 50000), // store up to 50k chars
-      label,
-      uploadedAt: now.toISOString(),
-      chars: text.length
-    });
 
-    return res.status(200).json({ 
-      ok: true, 
-      label,
-      chars: text.length,
-      preview: text.substring(0, 200)
-    });
+    await saveToGitHub(text, label);
 
+    return res.status(200).json({ ok: true, label, chars: text.length });
   } catch (err) {
-    console.error('Upload error:', err);
-    return res.status(500).json({ error: err.message || 'Error al procesar el PDF' });
+    console.error('Upload error:', err.message);
+    return res.status(500).json({ error: err.message || 'Error interno' });
   }
 }
