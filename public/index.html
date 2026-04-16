@@ -520,7 +520,7 @@ function renderResults(data) {
           <td class="muted-cell">${l.precio_usd ? 'USD ' + Number(l.precio_usd).toLocaleString('es-AR') : '—'}</td>
           <td class="muted-cell">${l.fecha_publicacion || '—'}</td>
           <td class="muted-cell">${l.vendedor || '—'}</td>
-          <td class="link-cell">${l.url ? `<a href="${l.url}" target="_blank">ver →</a>` : '—'}</td>
+          <td class="link-cell">${l.url ? `<a href="${l.url}" target="_blank" rel="noopener noreferrer" onclick="window.open(this.href,'_blank');return false;">ver →</a>` : '—'}</td>
         </tr>`;
       });
       html += '</tbody></table>';
